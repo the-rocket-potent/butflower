@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Stardew Sakura Cat - Jump & Land</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #77b5fe; overflow: hidden; }
+        canvas { display: block; image-rendering: pixelated; }
+    </style>
+</head>
+<body>
+
+<script>
+    const config = {
+        type: Phaser.AUTO,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        pixelArt: true,
+        scene: { preload: preload, create: create }
+    };
+
+    const game = new Phaser.Game(config);
+
+    function preload() {
+        // 1. 숨쉬는 고양이 시트 (기존)
+        this.load.spritesheet('cat_breathe', 'breathe-cat.png', { frameWidth: 64, frameHeight: 64 });
+        
+        // 2. 직접 그리신 6프레임 점프 시트 (새로 추가)
+        // 파일명을 실제 저장한 이름으로 확인해주세요!
+        this.load.spritesheet('cat_jump', 'cat-jump-6f.png', { frameWidth: 64, frameHeight: 64 });
+        
+        // 3. 벚꽃잎
+        this.load.image('petal', 'petal.png');
+    }
+
+    function create() {
+        // [1. 애니메이션 생성]
+        // 기본 숨쉬기
+        this.anims.create({
+            key: 'breathe_anim',
+            frames: this.anims.generateFrameNumbers('cat_breathe', { start: 0, end: 1 }),
+            frameRate: 2,
+            repeat: -1,
+            yoyo: true
+        });
+
+        // 점프 단계 (0~3번 프레임: 준비-도약-공중)
+        this.anims.create({
+            key: 'jump_up_anim',
+            frames: this.anims.generateFrameNumbers('cat_jump', { start: 0, end: 3 }),
+            frameRate: 12,
+            repeat: 0
+        });
+
+        // 착지 단계 (4~5번 프레임: 착지-복귀)
+        this.anims.create({
+            key: 'land_anim',
+            frames: this.anims.generateFrameNumbers('cat_jump', { start: 4, end: 5 }),
+            frameRate: 12,
+            repeat: 0
+        });
+
+        // [2. 고양이 배치]
+        const groundY = window.innerHeight / 2; // 바닥 높이 기준점
+        const cat = this.add.sprite(window.innerWidth / 2, groundY, 'cat_breathe');
+        cat.setScale(3);
+        cat.setInteractive(); // 클릭 가능하게 설정
+        cat.play('breathe_anim');
+        cat.setDepth(100);
+
+        // [3. 벚꽃 파티클 설정]
+        const createPetals = (depth, scaleMin, scaleMax, quantity) => {
+            return this.add.particles(0, 0, 'petal', {
+                x: { min: -100, max: window.innerWidth + 100 },
+                y: { min: -100, max: window.innerHeight + 100 },
+                quantity: quantity,
+                frequency: 100,
+                lifespan: 12000,
+                speedY: { min: 20, max: 60 },
+                speedX: { min: -30, max: 30 },
+                scale: { min: scaleMin, max: scaleMax },
+                rotate: { min: 0, max: 360 },
+                alpha: { start: 0, end: 0.7 },
+                drag: 0.02,
+                depth: depth
+            });
+        };
+
+        const backLayer = createPetals(50, 3, 5, 1);
+        const frontLayer = createPetals(150, 6, 9, 1);
+        backLayer.explode(100);
+        frontLayer.explode(30);
+
+        // [4. 점프 이벤트 추가]
+cat.on('pointerdown', () => {
+    if (cat.y === groundY) {
+        // 1. 점프 시작 (0~2번 프레임 사용)
+        cat.play('jump_up_anim'); 
+
+        this.tweens.add({
+            targets: cat,
+            y: groundY - 100, // 낮고 빠른 점프
+            duration: 300,    // 속도감 있게 수정
+            yoyo: true,
+            ease: 'Cubic.easeOut',
+
+            // [포인트] 공중에서 내려오는 중일 때
+            onYoyo: () => {
+                // 내려오는 동안은 공중 자세(예: 3번 프레임)를 유지하게 하거나
+                // 착지 직전 프레임으로 미리 바꿔줍니다.
+            },
+
+            // [핵심] 바닥에 발이 닿는 '그 순간'
+            onComplete: () => {
+                // 1. 즉시 4번째 프레임(착지 포즈)으로 변경!
+                // spritesheet의 4번째는 인덱스 3번입니다. (0, 1, 2, '3')
+                cat.setFrame(3); 
+
+                // 2. 물리적 충격 효과 (Squash)
+                this.tweens.add({
+                    targets: cat,
+                    scaleY: 2.3, 
+                    scaleX: 3.5, 
+                    duration: 80,
+                    yoyo: true,
+                    ease: 'Back.easeOut', 
+                    onComplete: () => {
+                        // 3. 충격이 끝나면 나머지 착지 마무리 프레임(5~6번) 재생 후 복귀
+                        cat.play('land_anim'); 
+                        cat.once('animationcomplete', () => {
+                            cat.play('breathe_anim');
+                        });
+                    }
+                });
+
+              
+            }
+        });
+    }
+});
+    }
+
+    window.addEventListener('resize', () => {
+        game.scale.resize(window.innerWidth, window.innerHeight);
+    });
+</script>
+
+</body>
+</html>

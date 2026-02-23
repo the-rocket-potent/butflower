@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <title>벚꽃 보러 갈래?</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+  </head> 
+
+<body>
+
+  <div class="sunlight"></div>
+
+  <img src="assets/cloud.png" class="cloud" style="top:60px;">
+  <img src="assets/cloud.png" class="cloud" style="top:120px; animation-delay:20s;">
+
+  <div class="ground"></div>
+
+
+
+  <div id="game">
+    <img id="cat" src="cat_sprite.png">
+</div>
+
+  <div class="dialog" id="dialog"></div>
+
+  <div class="choice" id="choice">
+    <div>음.. 벚꽃을 보러간다.</div>
+    <button onclick="yes()">좋아</button>
+    <button class="no-btn" id="noBtn" onclick="no()">아니</button>
+  </div>
+
+
+  <script src="js/script.js"></script>
+</body>
+</html>
